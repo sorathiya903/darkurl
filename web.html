@@ -1,0 +1,3681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>darkURL — HTTP Response Inspector</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      color-scheme: dark;
+
+      --bg: #080808;
+      --surface: #0d0d0d;
+      --surface-2: #111111;
+      --surface-3: #161616;
+
+      --text: #f5f5f5;
+      --text-2: #b7b7b7;
+      --text-3: #777;
+
+      --border: #242424;
+      --border-hover: #343434;
+
+      --accent: #f5f5f5;
+      --accent-text: #050505;
+
+      --success: #48d597;
+      --warning: #e5bd55;
+      --orange: #e08a4b;
+      --danger: #ef6666;
+
+      --radius: 9px;
+      --radius-lg: 12px;
+
+      --font:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      --mono:
+        "JetBrains Mono",
+        SFMono-Regular,
+        Consolas,
+        monospace;
+
+      --transition: 180ms ease;
+    }
+
+    [data-theme="light"] {
+      color-scheme: light;
+
+      --bg: #f7f7f6;
+      --surface: #ffffff;
+      --surface-2: #fafafa;
+      --surface-3: #f1f1f0;
+
+      --text: #111111;
+      --text-2: #5f5f5f;
+      --text-3: #888888;
+
+      --border: #e4e4e2;
+      --border-hover: #cececb;
+
+      --accent: #111111;
+      --accent-text: #ffffff;
+
+      --success: #168052;
+      --warning: #9a7615;
+      --orange: #a75b24;
+      --danger: #c13e3e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+
+      background: var(--bg);
+      color: var(--text);
+
+      font-family: var(--font);
+      font-size: 14px;
+
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+
+      transition:
+        background var(--transition),
+        color var(--transition);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .55;
+    }
+
+    ::selection {
+      background: var(--text);
+      color: var(--bg);
+    }
+
+    /* =========================================
+       HEADER
+    ========================================= */
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+
+      height: 60px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 0 max(18px, 4vw);
+
+      border-bottom: 1px solid var(--border);
+
+      background: color-mix(
+        in srgb,
+        var(--bg) 90%,
+        transparent
+      );
+
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+
+      color: var(--text);
+      text-decoration: none;
+
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -.35px;
+    }
+
+    .brand-mark {
+      width: 25px;
+      height: 25px;
+
+      display: grid;
+      place-items: center;
+
+      border: 1px solid var(--border-hover);
+      border-radius: 6px;
+
+      background: var(--text);
+      color: var(--bg);
+
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .nav {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .nav a {
+      padding: 7px 10px;
+
+      color: var(--text-3);
+      text-decoration: none;
+
+      border-radius: 6px;
+
+      font-size: 12px;
+      font-weight: 500;
+
+      transition:
+        color var(--transition),
+        background var(--transition);
+    }
+
+    .nav a:hover,
+    .nav a.active {
+      color: var(--text);
+      background: var(--surface-3);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .icon-btn,
+    .header-btn {
+      height: 32px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+
+      border: 1px solid var(--border);
+      border-radius: 7px;
+
+      background: transparent;
+      color: var(--text-2);
+
+      font-size: 11px;
+      font-weight: 500;
+
+      transition:
+        color var(--transition),
+        background var(--transition),
+        border-color var(--transition);
+    }
+
+    .icon-btn {
+      width: 32px;
+      padding: 0;
+    }
+
+    .header-btn {
+      padding: 0 10px;
+    }
+
+    .icon-btn:hover,
+    .header-btn:hover {
+      border-color: var(--border-hover);
+      background: var(--surface-3);
+      color: var(--text);
+    }
+
+    .github-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* =========================================
+       APP
+    ========================================= */
+
+    .app {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+
+      padding: 42px 0 80px;
+    }
+
+    /* =========================================
+       REQUEST
+    ========================================= */
+
+    .request-section {
+      margin-bottom: 20px;
+    }
+
+    .request-bar {
+      display: grid;
+      grid-template-columns: 100px 1fr auto;
+
+      min-height: 48px;
+
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+
+      background: var(--surface);
+
+      overflow: hidden;
+
+      transition:
+        border-color var(--transition),
+        box-shadow var(--transition);
+    }
+
+    .request-bar:focus-within {
+      border-color: var(--border-hover);
+
+      box-shadow:
+        0 0 0 3px color-mix(
+          in srgb,
+          var(--text) 5%,
+          transparent
+        );
+    }
+
+    .method-select {
+      appearance: none;
+
+      width: 100%;
+
+      border: 0;
+      border-right: 1px solid var(--border);
+
+      outline: 0;
+
+      padding: 0 14px;
+
+      background: var(--surface-2);
+      color: var(--text);
+
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+
+      cursor: pointer;
+    }
+
+    .url-input {
+      min-width: 0;
+
+      width: 100%;
+
+      border: 0;
+      outline: 0;
+
+      padding: 0 15px;
+
+      background: transparent;
+      color: var(--text);
+
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .url-input::placeholder {
+      color: var(--text-3);
+    }
+
+    .send-btn {
+      align-self: center;
+
+      height: 34px;
+
+      margin-right: 7px;
+      padding: 0 15px;
+
+      border: 0;
+      border-radius: 7px;
+
+      background: var(--accent);
+      color: var(--accent-text);
+
+      font-size: 11px;
+      font-weight: 600;
+
+      transition:
+        opacity var(--transition),
+        transform var(--transition);
+    }
+
+    .send-btn:hover:not(:disabled) {
+      opacity: .86;
+      transform: translateY(-1px);
+    }
+
+    .send-btn.loading {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .spinner {
+      width: 11px;
+      height: 11px;
+
+      border: 1.5px solid currentColor;
+      border-right-color: transparent;
+
+      border-radius: 50%;
+
+      animation: spin .65s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* =========================================
+       REQUEST OPTIONS
+    ========================================= */
+
+    .options-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+
+      margin-top: 10px;
+
+      border: 0;
+      background: transparent;
+
+      color: var(--text-3);
+
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .options-toggle:hover {
+      color: var(--text);
+    }
+
+    .chevron {
+      width: 7px;
+      height: 7px;
+
+      border-right: 1px solid currentColor;
+      border-bottom: 1px solid currentColor;
+
+      transform: rotate(45deg) translateY(-2px);
+
+      transition: transform var(--transition);
+    }
+
+    .options-toggle.open .chevron {
+      transform: rotate(225deg) translateY(-2px);
+    }
+
+    .options-panel {
+      display: none;
+
+      margin-top: 10px;
+
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+
+      background: var(--surface);
+
+      overflow: hidden;
+    }
+
+    .options-panel.open {
+      display: block;
+    }
+
+    .option-tabs {
+      display: flex;
+
+      border-bottom: 1px solid var(--border);
+    }
+
+    .option-tab {
+      padding: 10px 13px;
+
+      border: 0;
+      border-right: 1px solid var(--border);
+
+      background: transparent;
+      color: var(--text-3);
+
+      font-size: 11px;
+    }
+
+    .option-tab.active {
+      color: var(--text);
+      background: var(--surface-3);
+    }
+
+    .option-content {
+      padding: 15px;
+    }
+
+    .option-pane {
+      display: none;
+    }
+
+    .option-pane.active {
+      display: block;
+    }
+
+    .option-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+
+      gap: 8px;
+
+      margin-bottom: 8px;
+    }
+
+    .option-input,
+    .option-textarea {
+      width: 100%;
+
+      border: 1px solid var(--border);
+      border-radius: 7px;
+
+      outline: 0;
+
+      padding: 9px 10px;
+
+      background: var(--surface-2);
+      color: var(--text);
+
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .option-input:focus,
+    .option-textarea:focus {
+      border-color: var(--border-hover);
+    }
+
+    .option-textarea {
+      min-height: 130px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .remove-option {
+      width: 34px;
+
+      border: 1px solid var(--border);
+      border-radius: 7px;
+
+      background: transparent;
+      color: var(--text-3);
+    }
+
+    .remove-option:hover {
+      color: var(--danger);
+      border-color: var(--border-hover);
+    }
+
+    .add-option {
+      border: 1px solid var(--border);
+      border-radius: 7px;
+
+      padding: 7px 10px;
+
+      background: transparent;
+      color: var(--text-2);
+
+      font-size: 10px;
+    }
+
+    .add-option:hover {
+      background: var(--surface-3);
+      color: var(--text);
+    }
+
+    /* =========================================
+       SECONDARY TOOLS
+    ========================================= */
+
+    .secondary-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      margin-top: 13px;
+    }
+
+    .curl-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+
+      border: 0;
+      background: transparent;
+
+      color: var(--text-3);
+
+      font-size: 11px;
+    }
+
+    .curl-toggle:hover {
+      color: var(--text);
+    }
+
+    .secondary-actions {
+      display: flex;
+      gap: 7px;
+    }
+
+    .text-btn {
+      border: 1px solid var(--border);
+      border-radius: 7px;
+
+      padding: 7px 10px;
+
+      background: transparent;
+      color: var(--text-3);
+
+      font-size: 10px;
+    }
+
+    .text-btn:hover {
+      border-color: var(--border-hover);
+      color: var(--text);
+      background: var(--surface-3);
+    }
+
+    /* =========================================
+       CURL PANEL
+    ========================================= */
+
+    .curl-panel {
+      display: none;
+
+      margin-top: 10px;
+
+      padding: 14px;
+
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+
+      background: var(--surface);
+    }
+
+    .curl-panel.open {
+      display: block;
+    }
+
+    .curl-label {
+      margin-bottom: 8px;
+
+      color: var(--text-3);
+
+      font-family: var(--mono);
+      font-size: 10px;
+    }
+
+    .curl-input-wrap {
+      display: flex;
+      gap: 8px;
+    }
+
+    .curl-input {
+      flex: 1;
+      min-width: 0;
+
+      border: 1px solid var(--border);
+      border-radius: 7px;
+
+      outline: 0;
+
+      padding: 10px;
+
+      background: var(--surface-2);
+      color: var(--text);
+
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .curl-input:focus {
+      border-color: var(--border-hover);
+    }
+
+    /* =========================================
+       EXAMPLES
+    ========================================= */
+
+    .examples {
+      position: relative;
+    }
+
+    .example-menu {
+      position: absolute;
+      top: calc(100% + 7px);
+      right: 0;
+      z-index: 20;
+
+      display: none;
+
+      width: 210px;
+
+      padding: 5px;
+
+      border: 1px solid var(--border);
+      border-radius: 9px;
+
+      background: var(--surface);
+
+      box-shadow:
+        0 15px 40px rgba(0,0,0,.25);
+    }
+
+    .example-menu.open {
+      display: block;
+    }
+
+    .example-item {
+      width: 100%;
+
+      display: block;
+
+      padding: 9px 10px;
+
+      border: 0;
+      border-radius: 6px;
+
+      background: transparent;
+      color: var(--text-2);
+
+      text-align: left;
+
+      font-size: 11px;
+    }
+
+    .example-item:hover {
+      background: var(--surface-3);
+      color: var(--text);
+    }
+
+    .example-item small {
+      display: block;
+
+      margin-top: 3px;
+
+      color: var(--text-3);
+
+      font-family: var(--mono);
+      font-size: 9px;
+    }
+
+    /* =========================================
+       RESPONSE VIEWER
+    ========================================= */
+
+    .viewer {
+      min-height: 500px;
+
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+
+      background: var(--surface);
+
+      overflow: hidden;
+    }
+
+    .viewer-toolbar {
+      min-height: 57px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 0 15px;
+
+      border-bottom: 1px solid var(--border);
+    }
+
+    .response-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+
+      border-radius: 50%;
+
+      background: var(--text-3);
+    }
+
+    .status.success .status-dot {
+      background: var(--success);
+    }
+
+    .status.redirect .status-dot {
+      background: var(--warning);
+    }
+
+    .status.client-error .status-dot {
+      background: var(--orange);
+    }
+
+    .status.server-error .status-dot {
+      background: var(--danger);
+    }
+
+    .status.success .status-code {
+      color: var(--success);
+    }
+
+    .status.redirect .status-code {
+      color: var(--warning);
+    }
+
+    .status.client-error .status-code {
+      color: var(--orange);
+    }
+
+    .status.server-error .status-code {
+      color: var(--danger);
+    }
+
+    .status-code {
+      color: var(--text);
+    }
+
+    .meta-divider {
+      width: 1px;
+      height: 15px;
+
+      background: var(--border);
+    }
+
+    .meta-item {
+      color: var(--text-3);
+
+      font-family: var(--mono);
+      font-size: 9px;
+    }
+
+    .viewer-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .copy-btn {
+      height: 30px;
+
+      padding: 0 10px;
+
+      border: 1px solid var(--border);
+      border-radius: 7px;
+
+      background: transparent;
+      color: var(--text-2);
+
+      font-size: 10px;
+      font-weight: 500;
+
+      transition:
+        background var(--transition),
+        color var(--transition),
+        border-color var(--transition);
+    }
+
+    .copy-btn:hover {
+      border-color: var(--border-hover);
+      background: var(--surface-3);
+      color: var(--text);
+    }
+
+    /* =========================================
+       TABS
+    ========================================= */
+
+    .response-tabs {
+      display: flex;
+
+      padding: 0 15px;
+
+      border-bottom: 1px solid var(--border);
+    }
+
+    .response-tab {
+      position: relative;
+
+      padding: 12px 11px;
+
+      border: 0;
+      background: transparent;
+
+      color: var(--text-3);
+
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .response-tab:first-child {
+      padding-left: 4px;
+    }
+
+    .response-tab:hover {
+      color: var(--text-2);
+    }
+
+    .response-tab.active {
+      color: var(--text);
+    }
+
+    .response-tab.active::after {
+      content: "";
+
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      bottom: -1px;
+
+      height: 1px;
+
+      background: var(--text);
+    }
+
+    /* =========================================
+       RESPONSE CONTENT
+    ========================================= */
+
+    .viewer-content {
+      min-height: 430px;
+    }
+
+    .tab-panel {
+      display: none;
+
+      min-height: 430px;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .code-output {
+      min-height: 430px;
+      max-height: 650px;
+
+      overflow: auto;
+
+      margin: 0;
+      padding: 22px;
+
+      color: var(--text-2);
+
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.75;
+
+      white-space: pre;
+      tab-size: 2;
+    }
+
+    .code-output.wrap {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .code-output::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+
+    .code-output::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .code-output::-webkit-scrollbar-thumb {
+      background: var(--border-hover);
+      border-radius: 20px;
+    }
+
+    /* JSON */
+
+    .json-key {
+      color: #a9d6ff;
+    }
+
+    .json-string {
+      color: #a8d8b5;
+    }
+
+    .json-number {
+      color: #d5c18b;
+    }
+
+    .json-boolean {
+      color: #d6a8ff;
+    }
+
+    .json-null {
+      color: #888;
+    }
+
+    .json-brace {
+      color: #f0f0f0;
+      font-weight: 600;
+    }
+
+    [data-theme="light"] .json-key {
+      color: #245c91;
+    }
+
+    [data-theme="light"] .json-string {
+      color: #28704a;
+    }
+
+    [data-theme="light"] .json-number {
+      color: #795d00;
+    }
+
+    [data-theme="light"] .json-boolean {
+      color: #6e3a9a;
+    }
+
+    [data-theme="light"] .json-brace {
+      color: #222;
+    }
+
+    /* =========================================
+       HEADERS
+    ========================================= */
+
+    .headers-list {
+      padding: 4px 22px 20px;
+    }
+
+    .header-row {
+      display: grid;
+      grid-template-columns: 190px 1fr auto;
+      gap: 18px;
+
+      padding: 12px 0;
+
+      border-bottom: 1px solid var(--border);
+
+      font-family: var(--mono);
+      font-size: 10px;
+    }
+
+    .header-key {
+      color: var(--text);
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+
+    .header-value {
+      min-width: 0;
+
+      color: var(--text-2);
+
+      overflow-wrap: anywhere;
+    }
+
+    .header-copy {
+      border: 0;
+      background: transparent;
+
+      color: var(--text-3);
+
+      font-size: 9px;
+    }
+
+    .header-copy:hover {
+      color: var(--text);
+    }
+
+    /* =========================================
+       EMPTY / ERROR
+    ========================================= */
+
+    .empty-state,
+    .error-state {
+      min-height: 430px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 30px;
+
+      text-align: center;
+    }
+
+    .empty-inner,
+    .error-inner {
+      max-width: 360px;
+    }
+
+    .empty-title,
+    .error-title {
+      margin-bottom: 7px;
+
+      color: var(--text);
+
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .empty-description,
+    .error-description {
+      color: var(--text-3);
+
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .empty-example-btn {
+      margin-top: 14px;
+
+      border: 1px solid var(--border);
+      border-radius: 7px;
+
+      padding: 8px 11px;
+
+      background: transparent;
+      color: var(--text-2);
+
+      font-size: 10px;
+    }
+
+    .empty-example-btn:hover {
+      background: var(--surface-3);
+      color: var(--text);
+    }
+
+    .error-state {
+      align-items: center;
+    }
+
+    .error-inner {
+      padding: 18px;
+
+      border: 1px solid var(--border);
+      border-radius: 9px;
+
+      background: var(--surface-2);
+
+      text-align: left;
+    }
+
+    .error-title {
+      color: var(--danger);
+    }
+
+    .error-details {
+      margin-top: 12px;
+      padding-top: 12px;
+
+      border-top: 1px solid var(--border);
+
+      color: var(--text-3);
+
+      font-family: var(--mono);
+      font-size: 9px;
+      line-height: 1.7;
+
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* =========================================
+       FOOTER
+    ========================================= */
+
+    .footer {
+      width: min(1120px, calc(100% - 32px));
+
+      margin: 0 auto;
+      padding: 18px 0 30px;
+
+      display: flex;
+      justify-content: space-between;
+
+      color: var(--text-3);
+
+      font-size: 10px;
+    }
+
+    /* =========================================
+       MOBILE
+    ========================================= */
+
+    @media (max-width: 760px) {
+
+      .header {
+        padding: 0 15px;
+      }
+
+      .nav {
+        display: none;
+      }
+
+      .app {
+        width: calc(100% - 20px);
+        padding-top: 22px;
+      }
+
+      .request-bar {
+        grid-template-columns: 85px 1fr;
+      }
+
+      .send-btn {
+        grid-column: 1 / -1;
+
+        width: calc(100% - 14px);
+
+        margin: 0 7px 7px;
+      }
+
+      .url-input {
+        height: 47px;
+      }
+
+      .method-select {
+        height: 47px;
+      }
+
+      .option-row {
+        grid-template-columns: 1fr;
+      }
+
+      .remove-option {
+        width: 100%;
+        height: 32px;
+      }
+
+      .secondary-tools {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .viewer-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+
+        gap: 10px;
+
+        padding: 13px 15px;
+      }
+
+      .viewer-actions {
+        width: 100%;
+      }
+
+      .copy-btn {
+        width: 100%;
+      }
+
+      .response-meta {
+        flex-wrap: wrap;
+      }
+
+      .meta-divider {
+        display: none;
+      }
+
+      .header-row {
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+      }
+
+      .header-value {
+        grid-column: 1 / -1;
+        grid-row: 2;
+      }
+
+      .header-copy {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      .curl-input-wrap {
+        flex-direction: column;
+      }
+
+      .curl-input-wrap .text-btn {
+        width: 100%;
+      }
+
+      .footer {
+        flex-direction: column;
+        gap: 7px;
+      }
+    }
+
+    @media (max-width: 460px) {
+
+      .brand span {
+        display: none;
+      }
+
+      .header-actions .header-btn {
+        display: none;
+      }
+
+      .response-tabs {
+        overflow-x: auto;
+      }
+
+      .response-tab {
+        flex: 0 0 auto;
+      }
+
+      .meta-item {
+        font-size: 8px;
+      }
+
+      .code-output {
+        padding: 17px;
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+
+  <header class="header">
+
+    <a href="#" class="brand">
+      <span class="brand-mark">d</span>
+      <span>darkURL</span>
+    </a>
+
+    <nav class="nav">
+      <a href="#" class="active">Web</a>
+      <a href="#">CLI</a>
+      <a href="#">Docs</a>
+    </nav>
+
+    <div class="header-actions">
+
+      <button
+        class="icon-btn"
+        id="themeToggle"
+        aria-label="Toggle theme"
+        title="Toggle theme"
+      >
+        ☼
+      </button>
+
+      <button class="header-btn">
+        <svg
+          class="github-icon"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M12 .5a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.26c-3.34.73-4.04-1.42-4.04-1.42-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.74.08-.74 1.2.09 1.84 1.23 1.84 1.23 1.07 1.83 2.81 1.3 3.5.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.18 0 0 1-.32 3.3 1.23A11.5 11.5 0 0 1 12 6.43c1.02 0 2.05.14 3.01.42 2.3-1.55 3.3-1.23 3.3-1.23.65 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.6-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12 12 0 0 0 12 .5Z"/>
+        </svg>
+        GitHub
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- APPLICATION -->
+
+  <main class="app">
+
+    <!-- REQUEST -->
+
+    <section class="request-section">
+
+      <div class="request-bar">
+
+        <select
+          id="method"
+          class="method-select"
+          aria-label="HTTP method"
+        >
+          <option>GET</option>
+          <option>POST</option>
+          <option>PUT</option>
+          <option>PATCH</option>
+          <option>DELETE</option>
+        </select>
+
+        <input
+          id="url"
+          class="url-input"
+          type="url"
+          autocomplete="url"
+          spellcheck="false"
+          placeholder="https://api.example.com/users"
+          aria-label="Request URL"
+        />
+
+        <button
+          id="sendBtn"
+          class="send-btn"
+        >
+          Send
+        </button>
+
+      </div>
+
+
+      <!-- REQUEST OPTIONS -->
+
+      <button
+        id="optionsToggle"
+        class="options-toggle"
+        type="button"
+      >
+        <span class="chevron"></span>
+        Request options
+      </button>
+
+      <div
+        id="optionsPanel"
+        class="options-panel"
+      >
+
+        <div class="option-tabs">
+
+          <button
+            class="option-tab active"
+            data-option="headers"
+          >
+            Headers
+          </button>
+
+          <button
+            class="option-tab"
+            data-option="query"
+          >
+            Query parameters
+          </button>
+
+          <button
+            class="option-tab"
+            data-option="body"
+          >
+            Body
+          </button>
+
+        </div>
+
+
+        <div class="option-content">
+
+          <!-- HEADERS -->
+
+          <div
+            class="option-pane active"
+            id="headersPane"
+          >
+
+            <div id="headerRows">
+
+              <div class="option-row">
+
+                <input
+                  class="option-input request-header-key"
+                  placeholder="Header"
+                  spellcheck="false"
+                />
+
+                <input
+                  class="option-input request-header-value"
+                  placeholder="Value"
+                  spellcheck="false"
+                />
+
+                <button
+                  class="remove-option"
+                  type="button"
+                  onclick="removeOptionRow(this)"
+                >
+                  ×
+                </button>
+
+              </div>
+
+            </div>
+
+            <button
+              class="add-option"
+              onclick="addHeaderRow()"
+            >
+              + Add header
+            </button>
+
+          </div>
+
+
+          <!-- QUERY -->
+
+          <div
+            class="option-pane"
+            id="queryPane"
+          >
+
+            <div id="queryRows">
+
+              <div class="option-row">
+
+                <input
+                  class="option-input query-key"
+                  placeholder="Parameter"
+                  spellcheck="false"
+                />
+
+                <input
+                  class="option-input query-value"
+                  placeholder="Value"
+                  spellcheck="false"
+                />
+
+                <button
+                  class="remove-option"
+                  type="button"
+                  onclick="removeOptionRow(this)"
+                >
+                  ×
+                </button>
+
+              </div>
+
+            </div>
+
+            <button
+              class="add-option"
+              onclick="addQueryRow()"
+            >
+              + Add parameter
+            </button>
+
+          </div>
+
+
+          <!-- BODY -->
+
+          <div
+            class="option-pane"
+            id="bodyPane"
+          >
+
+            <textarea
+              id="requestBody"
+              class="option-textarea"
+              spellcheck="false"
+              placeholder='{
+  "name": "darkURL"
+}'
+            ></textarea>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- SECONDARY TOOLS -->
+
+      <div class="secondary-tools">
+
+        <button
+          id="curlToggle"
+          class="curl-toggle"
+        >
+          <span class="chevron"></span>
+          cURL
+        </button>
+
+        <div class="secondary-actions">
+
+          <div class="examples">
+
+            <button
+              id="exampleToggle"
+              class="text-btn"
+            >
+              Try an example
+            </button>
+
+            <div
+              id="exampleMenu"
+              class="example-menu"
+            >
+
+              <button
+                class="example-item"
+                data-example="json"
+              >
+                JSON API
+                <small>jsonplaceholder.typicode.com</small>
+              </button>
+
+              <button
+                class="example-item"
+                data-example="html"
+              >
+                HTML response
+                <small>example.com</small>
+              </button>
+
+              <button
+                class="example-item"
+                data-example="redirect"
+              >
+                Redirect
+                <small>httpbin.org/redirect/1</small>
+              </button>
+
+              <button
+                class="example-item"
+                data-example="error"
+              >
+                Error response
+                <small>httpbin.org/status/404</small>
+              </button>
+
+            </div>
+
+          </div>
+
+          <button
+            id="copyCurlBtn"
+            class="text-btn"
+          >
+            Copy cURL
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- CURL PANEL -->
+
+      <div
+        id="curlPanel"
+        class="curl-panel"
+      >
+
+        <div class="curl-label">
+          Paste a cURL command
+        </div>
+
+        <div class="curl-input-wrap">
+
+          <input
+            id="curlInput"
+            class="curl-input"
+            spellcheck="false"
+            placeholder='curl -X POST "https://api.example.com/users" -H "Content-Type: application/json" -d "{\"name\":\"Ada\"}"'
+          />
+
+          <button
+            id="parseCurlBtn"
+            class="text-btn"
+          >
+            Import cURL
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- RESPONSE VIEWER -->
+
+    <section
+      class="viewer"
+      id="viewer"
+    >
+
+      <div class="viewer-toolbar">
+
+        <div
+          class="response-meta"
+          id="responseMeta"
+        >
+
+          <div class="status" id="status">
+
+            <span class="status-dot"></span>
+
+            <span
+              class="status-code"
+              id="statusCode"
+            >
+              No response
+            </span>
+
+          </div>
+
+          <span class="meta-divider"></span>
+
+          <span
+            class="meta-item"
+            id="responseTime"
+          >
+            —
+          </span>
+
+          <span
+            class="meta-item"
+            id="responseSize"
+          >
+            —
+          </span>
+
+        </div>
+
+        <div class="viewer-actions">
+
+          <button
+            id="copyBtn"
+            class="copy-btn"
+          >
+            Copy
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- TABS -->
+
+      <div class="response-tabs">
+
+        <button
+          class="response-tab active"
+          data-tab="response"
+        >
+          Response
+        </button>
+
+        <button
+          class="response-tab"
+          data-tab="raw"
+        >
+          Raw
+        </button>
+
+        <button
+          class="response-tab"
+          data-tab="headers"
+        >
+          Headers
+        </button>
+
+      </div>
+
+
+      <div class="viewer-content">
+
+        <!-- EMPTY -->
+
+        <div
+          id="emptyState"
+          class="empty-state"
+        >
+
+          <div class="empty-inner">
+
+            <div class="empty-title">
+              Send a request to inspect the response
+            </div>
+
+            <div class="empty-description">
+              Enter a URL above and press Send.
+              Or load a small example to see how darkURL works.
+            </div>
+
+            <button
+              id="emptyExampleBtn"
+              class="empty-example-btn"
+            >
+              Try an example
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- ERROR -->
+
+        <div
+          id="errorState"
+          class="error-state"
+          style="display:none;"
+        >
+
+          <div class="error-inner">
+
+            <div class="error-title">
+              Request failed
+            </div>
+
+            <div
+              class="error-description"
+              id="errorDescription"
+            >
+              Could not connect to the server.
+            </div>
+
+            <div
+              class="error-details"
+              id="errorDetails"
+            ></div>
+
+          </div>
+
+        </div>
+
+
+        <!-- RESPONSE -->
+
+        <div
+          id="responsePanel"
+          class="tab-panel active"
+        >
+
+          <pre
+            id="responseOutput"
+            class="code-output wrap"
+          ></pre>
+
+        </div>
+
+
+        <!-- RAW -->
+
+        <div
+          id="rawPanel"
+          class="tab-panel"
+        >
+
+          <pre
+            id="rawOutput"
+            class="code-output wrap"
+          ></pre>
+
+        </div>
+
+
+        <!-- HEADERS -->
+
+        <div
+          id="headersPanel"
+          class="tab-panel"
+        >
+
+          <div
+            id="headersOutput"
+            class="headers-list"
+          ></div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <footer class="footer">
+
+    <span>darkURL</span>
+
+    <span>
+      HTTP response inspector
+    </span>
+
+  </footer>
+
+
+  <script>
+
+    /* =========================================
+       ELEMENTS
+    ========================================= */
+
+    const $ = selector =>
+      document.querySelector(selector);
+
+    const $$ = selector =>
+      document.querySelectorAll(selector);
+
+    const urlInput = $("#url");
+    const methodInput = $("#method");
+    const sendBtn = $("#sendBtn");
+
+    const optionsToggle = $("#optionsToggle");
+    const optionsPanel = $("#optionsPanel");
+
+    const curlToggle = $("#curlToggle");
+    const curlPanel = $("#curlPanel");
+
+    const exampleToggle = $("#exampleToggle");
+    const exampleMenu = $("#exampleMenu");
+
+    const responseOutput = $("#responseOutput");
+    const rawOutput = $("#rawOutput");
+    const headersOutput = $("#headersOutput");
+
+    const emptyState = $("#emptyState");
+    const errorState = $("#errorState");
+    const responsePanel = $("#responsePanel");
+    const rawPanel = $("#rawPanel");
+    const headersPanel = $("#headersPanel");
+
+    const status = $("#status");
+    const statusCode = $("#statusCode");
+
+    const responseTime = $("#responseTime");
+    const responseSize = $("#responseSize");
+
+    const copyBtn = $("#copyBtn");
+
+    let lastResponse = null;
+    let activeTab = "response";
+
+
+    /* =========================================
+       THEME
+    ========================================= */
+
+    const savedTheme =
+      localStorage.getItem("darkurl-theme");
+
+    if (savedTheme) {
+      document.documentElement.dataset.theme =
+        savedTheme;
+    }
+
+    function updateThemeIcon() {
+
+      const theme =
+        document.documentElement.dataset.theme;
+
+      $("#themeToggle").textContent =
+        theme === "light"
+          ? "☾"
+          : "☼";
+
+    }
+
+    updateThemeIcon();
+
+
+    $("#themeToggle").addEventListener(
+      "click",
+      () => {
+
+        const current =
+          document.documentElement.dataset.theme;
+
+        const next =
+          current === "light"
+            ? "dark"
+            : "light";
+
+        document.documentElement.dataset.theme =
+          next;
+
+        localStorage.setItem(
+          "darkurl-theme",
+          next
+        );
+
+        updateThemeIcon();
+
+      }
+    );
+
+
+    /* =========================================
+       REQUEST OPTIONS
+    ========================================= */
+
+    optionsToggle.addEventListener(
+      "click",
+      () => {
+
+        const open =
+          optionsPanel.classList.toggle("open");
+
+        optionsToggle.classList.toggle(
+          "open",
+          open
+        );
+
+      }
+    );
+
+
+    $$(".option-tab").forEach(tab => {
+
+      tab.addEventListener("click", () => {
+
+        $$(".option-tab").forEach(item => {
+          item.classList.remove("active");
+        });
+
+        $$(".option-pane").forEach(item => {
+          item.classList.remove("active");
+        });
+
+        tab.classList.add("active");
+
+        $(`#${tab.dataset.option}Pane`)
+          .classList.add("active");
+
+      });
+
+    });
+
+
+    function addHeaderRow(
+      key = "",
+      value = ""
+    ) {
+
+      const row =
+        document.createElement("div");
+
+      row.className =
+        "option-row";
+
+      row.innerHTML = `
+
+        <input
+          class="option-input request-header-key"
+          placeholder="Header"
+          spellcheck="false"
+          value="${escapeAttribute(key)}"
+        />
+
+        <input
+          class="option-input request-header-value"
+          placeholder="Value"
+          spellcheck="false"
+          value="${escapeAttribute(value)}"
+        />
+
+        <button
+          class="remove-option"
+          type="button"
+          onclick="removeOptionRow(this)"
+        >
+          ×
+        </button>
+
+      `;
+
+      $("#headerRows")
+        .appendChild(row);
+
+    }
+
+
+    function addQueryRow(
+      key = "",
+      value = ""
+    ) {
+
+      const row =
+        document.createElement("div");
+
+      row.className =
+        "option-row";
+
+      row.innerHTML = `
+
+        <input
+          class="option-input query-key"
+          placeholder="Parameter"
+          spellcheck="false"
+          value="${escapeAttribute(key)}"
+        />
+
+        <input
+          class="option-input query-value"
+          placeholder="Value"
+          spellcheck="false"
+          value="${escapeAttribute(value)}"
+        />
+
+        <button
+          class="remove-option"
+          type="button"
+          onclick="removeOptionRow(this)"
+        >
+          ×
+        </button>
+
+      `;
+
+      $("#queryRows")
+        .appendChild(row);
+
+    }
+
+
+    function removeOptionRow(button) {
+
+      const row =
+        button.closest(".option-row");
+
+      const parent =
+        row.parentElement;
+
+      if (parent.children.length <= 1) {
+
+        row
+          .querySelectorAll("input")
+          .forEach(input => {
+            input.value = "";
+          });
+
+        return;
+
+      }
+
+      row.remove();
+
+    }
+
+
+    /* =========================================
+       CURL PANEL
+    ========================================= */
+
+    curlToggle.addEventListener(
+      "click",
+      () => {
+
+        const open =
+          curlPanel.classList.toggle("open");
+
+        curlToggle.classList.toggle(
+          "open",
+          open
+        );
+
+      }
+    );
+
+
+    $("#parseCurlBtn").addEventListener(
+      "click",
+      parseCurl
+    );
+
+
+    function parseCurl() {
+
+      const command =
+        $("#curlInput").value.trim();
+
+      if (!command) return;
+
+      const parsed =
+        parseCurlCommand(command);
+
+      if (!parsed.url) {
+
+        showError(
+          "Could not parse the cURL command.",
+          "Make sure the command contains an http:// or https:// URL."
+        );
+
+        return;
+
+      }
+
+      urlInput.value =
+        parsed.url;
+
+      methodInput.value =
+        parsed.method;
+
+      clearRequestRows();
+
+      Object.entries(parsed.headers)
+        .forEach(([key, value]) => {
+
+          addHeaderRow(
+            key,
+            value
+          );
+
+        });
+
+      $("#requestBody").value =
+        parsed.body || "";
+
+      if (
+        parsed.headers["Content-Type"] ||
+        parsed.headers["content-type"]
+      ) {
+        // Keep imported content type as-is.
+      }
+
+      hideError();
+
+    }
+
+
+    function parseCurlCommand(command) {
+
+      const result = {
+        url: "",
+        method: "GET",
+        headers: {},
+        body: ""
+      };
+
+      const urlMatch =
+        command.match(
+          /(?:["'])(https?:\/\/[^"']+)(?:["'])/
+        ) ||
+        command.match(
+          /(https?:\/\/[^\s"'\\]+)/
+        );
+
+      if (urlMatch) {
+        result.url =
+          urlMatch[1];
+      }
+
+      const methodMatch =
+        command.match(
+          /(?:-X|--request)\s+["']?([A-Z]+)["']?/i
+        );
+
+      if (methodMatch) {
+        result.method =
+          methodMatch[1].toUpperCase();
+      }
+
+      const headerRegex =
+        /(?:-H|--header)\s+(?:"([^"]+)"|'([^']+)'|([^\s]+))/gi;
+
+      let headerMatch;
+
+      while (
+        (headerMatch =
+          headerRegex.exec(command))
+      ) {
+
+        const header =
+          headerMatch[1] ||
+          headerMatch[2] ||
+          headerMatch[3];
+
+        const index =
+          header.indexOf(":");
+
+        if (index === -1) continue;
+
+        const key =
+          header
+            .slice(0, index)
+            .trim();
+
+        const value =
+          header
+            .slice(index + 1)
+            .trim();
+
+        result.headers[key] =
+          value;
+
+      }
+
+      const bodyMatch =
+        command.match(
+          /(?:-d|--data|--data-raw|--data-binary)\s+(?:"([\s\S]*?)"|'([\s\S]*?)')/
+        );
+
+      if (bodyMatch) {
+
+        result.body =
+          bodyMatch[1] ||
+          bodyMatch[2] ||
+          "";
+
+        if (!methodMatch) {
+          result.method = "POST";
+        }
+
+      }
+
+      return result;
+
+    }
+
+
+    function clearRequestRows() {
+
+      $("#headerRows").innerHTML = "";
+
+      addHeaderRow();
+
+    }
+
+
+    /* =========================================
+       EXAMPLES
+    ========================================= */
+
+    const examples = {
+
+      json: {
+        url:
+          "https://jsonplaceholder.typicode.com/todos/1",
+        method:
+          "GET"
+      },
+
+      html: {
+        url:
+          "https://example.com",
+        method:
+          "GET"
+      },
+
+      redirect: {
+        url:
+          "https://httpbin.org/redirect/1",
+        method:
+          "GET"
+      },
+
+      error: {
+        url:
+          "https://httpbin.org/status/404",
+        method:
+          "GET"
+      }
+
+    };
+
+
+    exampleToggle.addEventListener(
+      "click",
+      event => {
+
+        event.stopPropagation();
+
+        exampleMenu.classList.toggle(
+          "open"
+        );
+
+      }
+    );
+
+
+    $$(".example-item").forEach(item => {
+
+      item.addEventListener(
+        "click",
+        () => {
+
+          const example =
+            examples[item.dataset.example];
+
+          if (!example) return;
+
+          urlInput.value =
+            example.url;
+
+          methodInput.value =
+            example.method;
+
+          exampleMenu.classList.remove(
+            "open"
+          );
+
+          sendRequest();
+
+        }
+      );
+
+    });
+
+
+    $("#emptyExampleBtn")
+      .addEventListener(
+        "click",
+        () => {
+
+          exampleMenu.classList.add(
+            "open"
+          );
+
+        }
+      );
+
+
+    document.addEventListener(
+      "click",
+      event => {
+
+        if (
+          !event.target.closest(".examples")
+        ) {
+          exampleMenu.classList.remove(
+            "open"
+          );
+        }
+
+      }
+    );
+
+
+    /* =========================================
+       REQUEST DATA
+    ========================================= */
+
+    function getHeaders() {
+
+      const headers = {};
+
+      $$(".request-header-key")
+        .forEach((keyInput, index) => {
+
+          const valueInput =
+            $$(".request-header-value")[index];
+
+          const key =
+            keyInput.value.trim();
+
+          const value =
+            valueInput.value.trim();
+
+          if (key) {
+            headers[key] =
+              value;
+          }
+
+        });
+
+      return headers;
+
+    }
+
+
+    function getQueryParams() {
+
+      const params =
+        new URLSearchParams();
+
+      $$(".query-key")
+        .forEach((keyInput, index) => {
+
+          const valueInput =
+            $$(".query-value")[index];
+
+          const key =
+            keyInput.value.trim();
+
+          const value =
+            valueInput.value;
+
+          if (key) {
+            params.append(
+              key,
+              value
+            );
+          }
+
+        });
+
+      return params;
+
+    }
+
+
+    function buildUrl() {
+
+      let raw =
+        urlInput.value.trim();
+
+      if (!raw) {
+        throw new Error(
+          "Enter a URL first."
+        );
+      }
+
+      if (
+        !/^https?:\/\//i.test(raw)
+      ) {
+        raw =
+          "https://" + raw;
+      }
+
+      const url =
+        new URL(raw);
+
+      const params =
+        getQueryParams();
+
+      params.forEach(
+        (value, key) => {
+          url.searchParams.set(
+            key,
+            value
+          );
+        }
+      );
+
+      return url.toString();
+
+    }
+
+
+    /* =========================================
+       SEND REQUEST
+    ========================================= */
+
+    sendBtn.addEventListener(
+      "click",
+      sendRequest
+    );
+
+
+    urlInput.addEventListener(
+      "keydown",
+      event => {
+
+        if (
+          event.key === "Enter"
+        ) {
+          sendRequest();
+        }
+
+      }
+    );
+
+
+    async function sendRequest() {
+
+      let targetUrl;
+
+      try {
+
+        targetUrl =
+          buildUrl();
+
+      } catch (error) {
+
+        showError(
+          "Invalid URL",
+          error.message
+        );
+
+        return;
+
+      }
+
+      const method =
+        methodInput.value;
+
+      const headers =
+        getHeaders();
+
+      const body =
+        $("#requestBody").value;
+
+      const options = {
+        method,
+        headers,
+        mode: "cors",
+        credentials: "omit"
+      };
+
+      if (
+        ![
+          "GET",
+          "HEAD"
+        ].includes(method) &&
+        body.trim()
+      ) {
+
+        options.body =
+          body;
+
+      }
+
+      setLoading(true);
+      hideError();
+      clearViewer();
+
+      const start =
+        performance.now();
+
+      try {
+
+        const response =
+          await fetch(
+            targetUrl,
+            options
+          );
+
+        const elapsed =
+          performance.now() - start;
+
+        const rawText =
+          await response.text();
+
+        const bytes =
+          new TextEncoder()
+            .encode(rawText)
+            .byteLength;
+
+        const headersList =
+          Array.from(
+            response.headers.entries()
+          );
+
+        lastResponse = {
+          url:
+            targetUrl,
+
+          method,
+
+          status:
+            response.status,
+
+          statusText:
+            response.statusText,
+
+          headers:
+            headersList,
+
+          body:
+            rawText,
+
+          time:
+            elapsed,
+
+          size:
+            bytes
+        };
+
+        renderResponse(
+          lastResponse
+        );
+
+      } catch (error) {
+
+        showError(
+          "Request failed",
+          getRequestErrorMessage(error),
+          `URL: ${targetUrl}\n\n${error.message || "Unknown browser error"}`
+        );
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    }
+
+
+    function getRequestErrorMessage(error) {
+
+      /*
+       * Fetch intentionally gives a generic TypeError
+       * for many browser/CORS failures.
+       */
+      if (
+        error instanceof TypeError
+      ) {
+
+        return (
+          "The browser could not access this response. " +
+          "The server may not allow cross-origin requests (CORS), " +
+          "or the server may be unreachable."
+        );
+
+      }
+
+      return (
+        error.message ||
+        "Could not connect to the server."
+      );
+
+    }
+
+
+    /* =========================================
+       LOADING
+    ========================================= */
+
+    function setLoading(loading) {
+
+      sendBtn.disabled =
+        loading;
+
+      if (loading) {
+
+        sendBtn.classList.add(
+          "loading"
+        );
+
+        sendBtn.innerHTML = `
+          <span class="spinner"></span>
+          Sending
+        `;
+
+      } else {
+
+        sendBtn.classList.remove(
+          "loading"
+        );
+
+        sendBtn.textContent =
+          "Send";
+
+      }
+
+    }
+
+
+    /* =========================================
+       RESPONSE RENDERING
+    ========================================= */
+
+    function renderResponse(data) {
+
+      hideEmpty();
+      hideError();
+
+      updateStatus(
+        data.status,
+        data.statusText
+      );
+
+      responseTime.textContent =
+        formatTime(data.time);
+
+      responseSize.textContent =
+        formatBytes(data.size);
+
+      rawOutput.textContent =
+        data.body;
+
+      renderBody(
+        data.body,
+        data.headers
+      );
+
+      renderHeaders(
+        data.headers
+      );
+
+      switchTab(
+        activeTab
+      );
+
+    }
+
+
+    function updateStatus(
+      code,
+      statusText
+    ) {
+
+      status.className =
+        "status";
+
+      if (code >= 200 && code < 300) {
+
+        status.classList.add(
+          "success"
+        );
+
+      } else if (
+        code >= 300 &&
+        code < 400
+      ) {
+
+        status.classList.add(
+          "redirect"
+        );
+
+      } else if (
+        code >= 400 &&
+        code < 500
+      ) {
+
+        status.classList.add(
+          "client-error"
+        );
+
+      } else if (code >= 500) {
+
+        status.classList.add(
+          "server-error"
+        );
+
+      }
+
+      statusCode.textContent =
+        `${code} ${statusText || statusMessage(code)}`;
+
+    }
+
+
+    function statusMessage(code) {
+
+      const messages = {
+
+        200: "Success",
+        201: "Created",
+        202: "Accepted",
+        204: "No Content",
+
+        301: "Moved Permanently",
+        302: "Found",
+        304: "Not Modified",
+        307: "Temporary Redirect",
+        308: "Permanent Redirect",
+
+        400: "Bad Request",
+        401: "Unauthorized",
+        403: "Forbidden",
+        404: "Not Found",
+        405: "Method Not Allowed",
+        408: "Request Timeout",
+        409: "Conflict",
+        422: "Unprocessable Entity",
+        429: "Too Many Requests",
+
+        500: "Internal Server Error",
+        501: "Not Implemented",
+        502: "Bad Gateway",
+        503: "Service Unavailable",
+        504: "Gateway Timeout"
+
+      };
+
+      return (
+        messages[code] ||
+        "HTTP Response"
+      );
+
+    }
+
+
+    /* =========================================
+       BODY DETECTION
+    ========================================= */
+
+    function renderBody(
+      body,
+      headers
+    ) {
+
+      const contentType =
+        getContentType(headers);
+
+      const trimmed =
+        body.trim();
+
+      const isJson =
+        contentType.includes(
+          "application/json"
+        ) ||
+        contentType.includes(
+          "+json"
+        ) ||
+        looksLikeJSON(trimmed);
+
+      const isHtml =
+        contentType.includes(
+          "text/html"
+        ) ||
+        looksLikeHTML(trimmed);
+
+      if (isJson) {
+
+        try {
+
+          const parsed =
+            JSON.parse(trimmed);
+
+          responseOutput.innerHTML =
+            highlightJSON(parsed);
+
+          return;
+
+        } catch {
+          // Fall through to text.
+        }
+
+      }
+
+      /*
+       * Returned HTML is deliberately displayed as
+       * escaped source rather than inserted into the DOM.
+       */
+      if (isHtml) {
+
+        responseOutput.textContent =
+          formatHTML(trimmed);
+
+        return;
+
+      }
+
+      responseOutput.textContent =
+        body;
+
+    }
+
+
+    function getContentType(headers) {
+
+      const item =
+        headers.find(
+          ([key]) =>
+            key.toLowerCase() ===
+            "content-type"
+        );
+
+      return (
+        item?.[1]?.toLowerCase() ||
+        ""
+      );
+
+    }
+
+
+    function looksLikeJSON(text) {
+
+      if (!text) return false;
+
+      return (
+        (
+          text.startsWith("{") &&
+          text.endsWith("}")
+        ) ||
+        (
+          text.startsWith("[") &&
+          text.endsWith("]")
+        )
+      );
+
+    }
+
+
+    function looksLikeHTML(text) {
+
+      if (!text) return false;
+
+      return (
+        /^<!doctype\s+html/i.test(text) ||
+        /<html[\s>]/i.test(text) ||
+        /<body[\s>]/i.test(text) ||
+        /<div[\s>]/i.test(text)
+      );
+
+    }
+
+
+    function formatHTML(html) {
+
+      return html
+        .replace(
+          />\s*</g,
+          ">\n<"
+        )
+        .replace(
+          /(<[^/][^>]*>)\s*(<)/g,
+          "$1\n$2"
+        )
+        .trim();
+
+    }
+
+
+    /* =========================================
+       JSON HIGHLIGHTING
+    ========================================= */
+
+    function highlightJSON(value) {
+
+      const json =
+        JSON.stringify(
+          value,
+          null,
+          2
+        );
+
+      let output = "";
+      let index = 0;
+
+      while (
+        index < json.length
+      ) {
+
+        const char =
+          json[index];
+
+        /*
+         * Strings
+         */
+
+        if (char === '"') {
+
+          let end =
+            index + 1;
+
+          while (
+            end < json.length
+          ) {
+
+            if (
+              json[end] === '"' &&
+              json[end - 1] !== "\\"
+            ) {
+              break;
+            }
+
+            end++;
+
+          }
+
+          const token =
+            json.slice(
+              index,
+              end + 1
+            );
+
+          let next =
+            end + 1;
+
+          while (
+            next < json.length &&
+            /\s/.test(json[next])
+          ) {
+            next++;
+          }
+
+          const isKey =
+            json[next] === ":";
+
+          output += `
+            <span class="${
+              isKey
+                ? "json-key"
+                : "json-string"
+            }">${escapeHTML(token)}</span>
+          `;
+
+          index =
+            end + 1;
+
+          continue;
+
+        }
+
+
+        /*
+         * Braces / brackets
+         */
+
+        if (
+          "{}[]".includes(char)
+        ) {
+
+          output +=
+            `<span class="json-brace">${char}</span>`;
+
+          index++;
+
+          continue;
+
+        }
+
+
+        /*
+         * Numbers
+         */
+
+        const numberMatch =
+          json
+            .slice(index)
+            .match(
+              /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/
+            );
+
+        if (numberMatch) {
+
+          output +=
+            `<span class="json-number">${numberMatch[0]}</span>`;
+
+          index +=
+            numberMatch[0].length;
+
+          continue;
+
+        }
+
+
+        /*
+         * Boolean
+         */
+
+        const booleanMatch =
+          json
+            .slice(index)
+            .match(
+              /^(true|false)/
+            );
+
+        if (booleanMatch) {
+
+          output +=
+            `<span class="json-boolean">${booleanMatch[0]}</span>`;
+
+          index +=
+            booleanMatch[0].length;
+
+          continue;
+
+        }
+
+
+        /*
+         * Null
+         */
+
+        if (
+          json.startsWith(
+            "null",
+            index
+          )
+        ) {
+
+          output +=
+            `<span class="json-null">null</span>`;
+
+          index += 4;
+
+          continue;
+
+        }
+
+
+        output +=
+          escapeHTML(char);
+
+        index++;
+
+      }
+
+      return output;
+
+    }
+
+
+    /* =========================================
+       HEADERS
+    ========================================= */
+
+    function renderHeaders(headers) {
+
+      if (!headers.length) {
+
+        headersOutput.innerHTML = `
+          <div class="empty-state" style="min-height:200px;">
+            <div class="empty-inner">
+              <div class="empty-title">
+                No readable response headers
+              </div>
+              <div class="empty-description">
+                The browser may restrict access to response
+                headers because of CORS.
+              </div>
+            </div>
+          </div>
+        `;
+
+        return;
+
+      }
+
+      headersOutput.innerHTML =
+        headers
+          .map(
+            ([key, value]) => `
+
+              <div class="header-row">
+
+                <div class="header-key">
+                  ${escapeHTML(key)}
+                </div>
+
+                <div class="header-value">
+                  ${escapeHTML(value)}
+                </div>
+
+                <button
+                  class="header-copy"
+                  onclick="copyText(this, ${JSON.stringify(value)})"
+                >
+                  Copy
+                </button>
+
+              </div>
+
+            `
+          )
+          .join("");
+
+    }
+
+
+    /* =========================================
+       TABS
+    ========================================= */
+
+    $$(".response-tab").forEach(tab => {
+
+      tab.addEventListener(
+        "click",
+        () => {
+
+          switchTab(
+            tab.dataset.tab
+          );
+
+        }
+      );
+
+    });
+
+
+    function switchTab(tab) {
+
+      activeTab =
+        tab;
+
+      $$(".response-tab")
+        .forEach(button => {
+
+          button.classList.toggle(
+            "active",
+            button.dataset.tab === tab
+          );
+
+        });
+
+      responsePanel.classList.toggle(
+        "active",
+        tab === "response"
+      );
+
+      rawPanel.classList.toggle(
+        "active",
+        tab === "raw"
+      );
+
+      headersPanel.classList.toggle(
+        "active",
+        tab === "headers"
+      );
+
+    }
+
+
+    /* =========================================
+       COPY
+    ========================================= */
+
+    copyBtn.addEventListener(
+      "click",
+      async () => {
+
+        if (!lastResponse) return;
+
+        let text = "";
+
+        if (
+          activeTab === "raw"
+        ) {
+
+          text =
+            lastResponse.body;
+
+        } else if (
+          activeTab === "headers"
+        ) {
+
+          text =
+            lastResponse.headers
+              .map(
+                ([key, value]) =>
+                  `${key}: ${value}`
+              )
+              .join("\n");
+
+        } else {
+
+          text =
+            responseOutput.textContent;
+
+        }
+
+        await copyText(
+          copyBtn,
+          text
+        );
+
+      }
+    );
+
+
+    async function copyText(
+      button,
+      text
+    ) {
+
+      if (!text) return;
+
+      try {
+
+        await navigator.clipboard.writeText(
+          text
+        );
+
+        const old =
+          button.textContent;
+
+        button.textContent =
+          "Copied ✓";
+
+        setTimeout(
+          () => {
+            button.textContent =
+              old;
+          },
+          1300
+        );
+
+      } catch {
+
+        button.textContent =
+          "Copy failed";
+
+        setTimeout(
+          () => {
+            button.textContent =
+              "Copy";
+          },
+          1300
+        );
+
+      }
+
+    }
+
+
+    /* =========================================
+       CURL GENERATOR
+    ========================================= */
+
+    $("#copyCurlBtn")
+      .addEventListener(
+        "click",
+        async () => {
+
+          try {
+
+            const curl =
+              buildCurl();
+
+            await copyText(
+              $("#copyCurlBtn"),
+              curl
+            );
+
+          } catch (error) {
+
+            showError(
+              "Could not create cURL",
+              error.message
+            );
+
+          }
+
+        }
+      );
+
+
+    function buildCurl() {
+
+      const url =
+        buildUrl();
+
+      const method =
+        methodInput.value;
+
+      const headers =
+        getHeaders();
+
+      const body =
+        $("#requestBody")
+          .value
+          .trim();
+
+      let command =
+        `curl -X ${method} "${url}"`;
+
+      Object.entries(headers)
+        .forEach(
+          ([key, value]) => {
+
+            command +=
+              ` -H "${escapeShell(key)}: ${escapeShell(value)}"`;
+
+          }
+        );
+
+      if (body) {
+
+        command +=
+          ` --data '${body.replace(
+            /'/g,
+            "'\\''"
+          )}'`;
+
+      }
+
+      return command;
+
+    }
+
+
+    function escapeShell(value) {
+
+      return String(value)
+        .replace(
+          /\\/g,
+          "\\\\"
+        )
+        .replace(
+          /"/g,
+          '\\"'
+        );
+
+    }
+
+
+    /* =========================================
+       HELPERS
+    ========================================= */
+
+    function escapeHTML(value) {
+
+      return String(value)
+        .replace(
+          /&/g,
+          "&amp;"
+        )
+        .replace(
+          /</g,
+          "&lt;"
+        )
+        .replace(
+          />/g,
+          "&gt;"
+        )
+        .replace(
+          /"/g,
+          "&quot;"
+        )
+        .replace(
+          /'/g,
+          "&#039;"
+        );
+
+    }
+
+
+    function escapeAttribute(value) {
+
+      return escapeHTML(
+        value
+      );
+
+    }
+
+
+    function formatTime(ms) {
+
+      if (ms < 1000) {
+        return `${Math.round(ms)} ms`;
+      }
+
+      return `${(
+        ms / 1000
+      ).toFixed(2)} s`;
+
+    }
+
+
+    function formatBytes(bytes) {
+
+      if (
+        bytes === null ||
+        bytes === undefined
+      ) {
+        return "—";
+      }
+
+      if (bytes < 1024) {
+        return `${bytes} B`;
+      }
+
+      if (bytes < 1024 * 1024) {
+
+        return `${(
+          bytes / 1024
+        ).toFixed(1)} KB`;
+
+      }
+
+      return `${(
+        bytes /
+        (1024 * 1024)
+      ).toFixed(2)} MB`;
+
+    }
+
+
+    /* =========================================
+       EMPTY / ERROR STATES
+    ========================================= */
+
+    function hideEmpty() {
+
+      emptyState.style.display =
+        "none";
+
+    }
+
+
+    function clearViewer() {
+
+      emptyState.style.display =
+        "none";
+
+      errorState.style.display =
+        "none";
+
+      responseOutput.textContent =
+        "";
+
+      rawOutput.textContent =
+        "";
+
+      headersOutput.innerHTML =
+        "";
+
+      responseTime.textContent =
+        "—";
+
+      responseSize.textContent =
+        "—";
+
+      status.className =
+        "status";
+
+      statusCode.textContent =
+        "Waiting…";
+
+    }
+
+
+    function showError(
+      title,
+      description,
+      details = ""
+    ) {
+
+      emptyState.style.display =
+        "none";
+
+      responsePanel.classList.remove(
+        "active"
+      );
+
+      rawPanel.classList.remove(
+        "active"
+      );
+
+      headersPanel.classList.remove(
+        "active"
+      );
+
+      errorState.style.display =
+        "flex";
+
+      $("#errorDescription")
+        .textContent =
+        description;
+
+      $("#errorDetails")
+        .textContent =
+        details;
+
+      status.className =
+        "status server-error";
+
+      statusCode.textContent =
+        "Request failed";
+
+      responseTime.textContent =
+        "—";
+
+      responseSize.textContent =
+        "—";
+
+    }
+
+
+    function hideError() {
+
+      errorState.style.display =
+        "none";
+
+    }
+
+
+    /* =========================================
+       INITIAL STATE
+    ========================================= */
+
+    switchTab(
+      "response"
+    );
+
+  </script>
+
+</body>
+</html>
