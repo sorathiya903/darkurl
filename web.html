@@ -2427,18 +2427,9 @@ if(
 
     });
 
-
-    $("#emptyExampleBtn")
-      .addEventListener(
-        "click",
-        () => {
-
-          exampleMenu.classList.add(
-            "open"
-          );
-
-        }
-      );
+$("#emptyExampleBtn").addEventListener("click", () => {
+  exampleToggle.click();
+});
 
 
     document.addEventListener(
